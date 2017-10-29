@@ -1,0 +1,118 @@
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using Consol_LocalDB_nosql.Model;
+using LiteDB;
+
+namespace Consol_LocalDB_nosql.Logic
+{
+    public class LocalDB
+    {
+        private const string UserTable = "Uzytkownicy";
+        private const string PersonTable = "Osoby";
+        private const string RolesTable = "RoleUzytkownika";
+        private LiteDatabase _conection;
+        public LocalDB()
+        {
+            _conection = new LiteDatabase("LokalnaBazaNoSql.db");//@"C:\db\myapp.db"--Tak można podać ścieżkę do pliku bazy
+        }
+
+        /// <summary>
+        /// Dodajemy albo edytujemy Cały model użytkownika
+        /// </summary>
+        /// <param name="user"></param>
+        public void InsertOrUpdateFullUser(User user)
+        {
+            var colection = _conection.GetCollection<User>(UserTable);
+            if (colection.Find(u=>u.Nick == user.Nick).Any())
+            {
+                colection.Update(user);
+            }
+            else
+            {
+                colection.Insert(user);
+                colection.EnsureIndex(u => u.Nick);
+            }
+        }
+        public bool DeleteUser(string userNick)
+        {
+            var colection = _conection.GetCollection<User>(UserTable);
+            var row = colection.FindOne(u => u.Nick == userNick);
+            return row != null && colection.Delete(row.UserId);
+        }
+
+        public IEnumerable<User> GetAllUser()
+        {
+            var colection = _conection.GetCollection<User>(UserTable);
+            return colection.FindAll();
+        }
+
+        public void InsertOrUpdatePerson(Person person)
+        {
+            var colection = _conection.GetCollection<Person>(PersonTable);
+            if (colection.Find(p => p.Email == person.Email).Any())
+            {
+                colection.Update(person);
+            }
+            else
+            {
+                //person.PersonId=new ObjectId();//--W przypadku błędu duplikacji id nałeży odkomentować 
+                colection.Insert(person);//Dodajemy Osobę
+                colection.EnsureIndex(x => x.Email);//Ustawiamy indeks na email użytkownika
+            }
+        }
+        public bool DeletePerson(string email)
+        {
+            var colection = _conection.GetCollection<Person>(PersonTable);
+            var row = colection.FindOne(u => u.Email == email);
+            return row != null && colection.Delete(row.PersonId);
+        }
+        /// <summary>
+        /// Zwracamy listę wszystkich osób zapisanych w naszej bazie
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerable<Person> GetAllPerson()
+        {
+            var colection = _conection.GetCollection<Person>(PersonTable);
+            return colection.FindAll();
+        }
+
+        public Person GetPerson(string email)
+        {
+            var colection = _conection.GetCollection<Person>(PersonTable);
+            return colection.FindOne(x => x.Email == email);
+        }
+
+        public void InsertOrUpdateRole(Roles rola)
+        {
+            var colection = _conection.GetCollection<Roles>(RolesTable);
+
+            if (colection.Find(p => p.Name == rola.Name).Any())
+            {
+                colection.Update(rola);
+            }
+            else
+            {
+                //rola.RoleId = new ObjectId();//--czasem przy kilu insertach pod rząd pojawia się błąd duplikate key- to jest zabezpieczenie przed tym
+                colection.Insert(rola);//Dodajemy Osobę
+                colection.EnsureIndex(x => x.Name);//Ustawiamy indeks na nazwę roli
+            }
+        }
+
+        public bool DeleteRole(string name)
+        {
+            var colection = _conection.GetCollection<Roles>(RolesTable);
+            var row = colection.FindOne(u => u.Name==name);
+            return row != null && colection.Delete(row.RoleId);
+        }
+
+        public IEnumerable<Roles> GetAllRoles()
+        {
+            var colection = _conection.GetCollection<Roles>(RolesTable);
+            
+            return colection.FindAll();
+        }
+
+    }
+}
